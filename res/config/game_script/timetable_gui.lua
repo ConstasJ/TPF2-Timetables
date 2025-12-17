@@ -1164,6 +1164,7 @@ function timetableGUI.timetableCoroutine()
 	local currentProcessingTime = 0
 
     while true do
+        print("coroutine is executed")
 		currentProcessingTime = timetableHelper.getTime()
         -- only run once a second to avoid unnecessary cpu usage
         while currentProcessingTime - lastUpdate < 1 do
@@ -1233,17 +1234,28 @@ function data()
             if state == nil then state = {timetable = {}} end
             if co == nil or coroutine.status(co) == "dead" then
                 co = coroutine.create(timetableGUI.timetableCoroutine)
+                print("Created new timetable coroutine")
             end
-            for _ = 0, 20 do
-                local coroutineStatus = coroutine.status(co)
-                if coroutineStatus == "suspended" then
-                    local err, msg = coroutine.resume(co)
-                    if not err then print("Timetables coroutine error: " .. tostring(msg)) end
-                else
-                    print("Timetables failed to resume " .. coroutineStatus .. " coroutine.")
+
+            -- Resume the coroutine once per update call
+            local coroutineStatus = coroutine.status(co)
+            print("Timetables coroutine status: " .. coroutineStatus)
+            if coroutineStatus == "suspended" then
+                local success, errorMsg = coroutine.resume(co)
+                if not success then
+                    print("Timetables coroutine error: " .. tostring(errorMsg))
+                    -- Recreate the coroutine if there was an error
+                    co = coroutine.create(timetableGUI.timetableCoroutine)
+                    print("Recreated timetable coroutine after error")
+                end
+            else
+                if coroutineStatus ~= "running" then
+                    -- Recreate the coroutine if it's in an unexpected state
+                    co = coroutine.create(timetableGUI.timetableCoroutine)
+                    print("Recreated timetable coroutine due to unexpected status")
                 end
             end
-			
+
             -- TODO: check if needed
             -- state.timetable = timetable.getTimetableObject()
 
