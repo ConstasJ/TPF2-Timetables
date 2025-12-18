@@ -323,6 +323,12 @@ function timetable.departIfReady(vehicle, vehicles, line, stop, vehicleState)
     elseif vehicleState.doorsOpen then
         local arrivalTime = math.floor(vehicleState.doorsTime / 1000000)
         if timetable.readyToDepart(vehicle, arrivalTime, vehicles, line, stop) then
+            if timetableObject[line].stations[stop].conditions.type == "ArrDep" then
+                -- Clear the vehicle from the waiting list upon departure
+                if timetableObject[line].stations[stop].vehiclesWaiting then
+                    timetableObject[line].stations[stop].vehiclesWaiting[vehicle] = nil
+                end
+            end
             if timetable.getForceDepartureEnabled(line) then
                 timetableHelper.departVehicle(vehicle)
             else
